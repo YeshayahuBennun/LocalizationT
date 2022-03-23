@@ -1,7 +1,12 @@
 package com.ybennun.location;
 
+import android.app.Dialog;
+import android.app.SearchManager;
+import android.content.DialogInterface;
 import android.os.Bundle;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.material.snackbar.Snackbar;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,6 +22,7 @@ import com.ybennun.location.databinding.ActivityMainBinding;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -72,5 +78,24 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         return NavigationUI.navigateUp(navController, appBarConfiguration)
                 || super.onSupportNavigateUp();
+    }
+
+    @Override
+    protected void onPostResume() {
+        super.onPostResume();
+
+        int errorCode = GoogleApiAvailability.getInstance()
+                .isGooglePlayServicesAvailable(this);
+        if (errorCode != ConnectionResult.SUCCESS) {
+            Dialog errorDialog = GoogleApiAvailability.getInstance()
+                    .getErrorDialog(this, errorCode, errorCode, dialog -> {
+                        Toast.makeText(MainActivity.this, "No services", Toast.LENGTH_LONG).show();
+                    });
+            assert errorDialog != null;
+                errorDialog.show();
+            finish();
+        }else{
+            Toast.makeText(MainActivity.this, "All is good!", Toast.LENGTH_LONG).show();
+        }
     }
 }
