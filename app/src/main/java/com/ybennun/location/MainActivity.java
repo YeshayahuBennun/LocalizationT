@@ -14,10 +14,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.snackbar.Snackbar;
 
 import androidx.annotation.NonNull;
@@ -26,7 +23,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.view.View;
 
-import androidx.core.app.ActivityCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -36,10 +32,8 @@ import com.ybennun.location.databinding.ActivityMainBinding;
 
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
@@ -51,11 +45,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private ArrayList<String> permissionsToRequest;
     private ArrayList<String> permissions = new ArrayList<>();
     private ArrayList<String> permissionsRejected = new ArrayList<>();
-    private TextView locationTextView;
-    private LocationRequest locationRequest;
-
-    public static final long UPDATE_INTERVAL = 5000;
-    public static final long FASTEST_INTERVAL = 5000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +54,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         setContentView(binding.getRoot());
 
         setSupportActionBar(binding.toolbar);
-        locationTextView = findViewById(R.id.location_text_view);
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MainActivity.this);
 
@@ -81,9 +69,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 .addConnectionCallbacks(this)
                 .build();
 
-//        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-//        appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
-//        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
+        appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
+        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
 
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -97,8 +85,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private ArrayList<String> permissionsToRequest(ArrayList<String> wantedPermissions) {
         ArrayList<String> result = new ArrayList<>();
 
-        for (String perm : wantedPermissions) {
-            if (!hasPermission(perm)) {
+        for(String perm:wantedPermissions){
+            if(!hasPermission(perm)){
                 result.add(perm);
             }
         }
@@ -106,24 +94,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         return null;
     }
 
-    private void checkPlayServices() {
-        int errorCode = GoogleApiAvailability.getInstance()
-                .isGooglePlayServicesAvailable(this);
-        if (errorCode != ConnectionResult.SUCCESS) {
-            Dialog errorDialog = GoogleApiAvailability.getInstance()
-                    .getErrorDialog(this, errorCode, errorCode, dialog -> {
-                        Toast.makeText(MainActivity.this, "No services", Toast.LENGTH_LONG).show();
-                    });
-            assert errorDialog != null;
-            errorDialog.show();
-            finish();
-        } else {
-            Toast.makeText(MainActivity.this, "All is good!", Toast.LENGTH_LONG).show();
-        }
-    }
-
     private boolean hasPermission(String perm) {
-        return checkCallingOrSelfPermission(perm) == PackageManager.PERMISSION_GRANTED;
+        return checkCallingOrSelfPermission(perm)== PackageManager.PERMISSION_GRANTED;
     }
 
     @Override
@@ -149,42 +121,28 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        if (client != null) {
-            client.connect();
-        }
+    public boolean onSupportNavigateUp() {
+        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
+        return NavigationUI.navigateUp(navController, appBarConfiguration)
+                || super.onSupportNavigateUp();
     }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        client.disconnect();
-    }
-
-//    @Override
-//    public boolean onSupportNavigateUp() {
-//        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-//        return NavigationUI.navigateUp(navController, appBarConfiguration)
-//                || super.onSupportNavigateUp();
-//    }
 
     @Override
     protected void onPostResume() {
         super.onPostResume();
 
-        checkPlayServices();
-
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (client == null && client.isConnected()) {
-            LocationServices.getFusedLocationProviderClient(this)
-                    .removeLocationUpdates(new LocationCallback() {
+        int errorCode = GoogleApiAvailability.getInstance()
+                .isGooglePlayServicesAvailable(this);
+        if (errorCode != ConnectionResult.SUCCESS) {
+            Dialog errorDialog = GoogleApiAvailability.getInstance()
+                    .getErrorDialog(this, errorCode, errorCode, dialog -> {
+                        Toast.makeText(MainActivity.this, "No services", Toast.LENGTH_LONG).show();
                     });
-            client.disconnect();
+            assert errorDialog != null;
+            errorDialog.show();
+            finish();
+        } else {
+            Toast.makeText(MainActivity.this, "All is good!", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -195,39 +153,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        fusedLocationProviderClient.getLastLocation()
-                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
-                    @Override
-                    public void onSuccess(Location location) {
-                        //Get last know location.But it could be null
-                        if (location != null) {
-                            locationTextView.setText(MessageFormat.format("Lat {0} Long {1}",
-                                    location.getLatitude(), location.getLongitude()));
-                        }
 
-                    }
-                });
-        startLocationUpdates();
-    }
-
-    private void startLocationUpdates() {
-        locationRequest = new LocationRequest();
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationRequest.setInterval(UPDATE_INTERVAL);
-        locationRequest.setFastestInterval(FASTEST_INTERVAL);
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                        != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(MainActivity.this,
-                    "You need to enable permission to display location!", Toast.LENGTH_LONG).show();
-        }
     }
 
     @Override
